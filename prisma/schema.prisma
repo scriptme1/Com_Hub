@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  role          Role      @default(USER)
+  stores        Store[]
+  orders        Order[]
+}
+
+model Store {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  logo          String?
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  products      Product[]
+  orders        Order[]
+  channels      Channel[]
+  conversations Conversation[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Product {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  price         Float
+  stock         Int
+  images        String[]
+  storeId       String
+  store         Store     @relation(fields: [storeId], references: [id])
+  orderItems    OrderItem[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Order {
+  id              String    @id @default(cuid())
+  orderNumber     String    @unique
+  status          OrderStatus
+  total           Float
+  items           OrderItem[]
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  storeId         String
+  store           Store     @relation(fields: [storeId], references: [id])
+  channelId       String
+  channel         Channel   @relation(fields: [channelId], references: [id])
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  shippingAddress String
+  conversationId  String?
+  conversation    Conversation? @relation(fields: [conversationId], references: [id])
+  invoice         Invoice?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model OrderItem {
+  id          String    @id @default(cuid())
+  quantity    Int
+  price       Float
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id])
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+}
+
+model Channel {
+  id            String    @id @default(cuid())
+  name          String
+  type          ChannelType
+  credentials   Json?
+  storeId       String
+  store         Store     @relation(fields: [storeId], references: [id])
+  orders        Order[]
+  conversations Conversation[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Conversation {
+  id          String    @id @default(cuid())
+  channelId   String
+  channel     Channel   @relation(fields: [channelId], references: [id])
+  storeId     String
+  store       Store     @relation(fields: [storeId], references: [id])
+  customerId  String
+  messages    Message[]
+  orders      Order[]
+  type        ConversationType
+  status      ConversationStatus @default(ACTIVE)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Message {
+  id              String    @id @default(cuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id])
+  content         String
+  type            MessageType
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+}
+
+model Invoice {
+  id          String    @id @default(cuid())
+  orderId     String    @unique
+  order       Order     @relation(fields: [orderId], references: [id])
+  number      String    @unique
+  status      InvoiceStatus
+  dueDate     DateTime
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum ChannelType {
+  FACEBOOK
+  INSTAGRAM
+  LINE
+  SHOPEE
+  LAZADA
+}
+
+enum ConversationType {
+  POST_COMMENT
+  MESSENGER
+  INSTAGRAM_DM
+  LIVE_CHAT
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  PRODUCT
+  ORDER
+  INVOICE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  VOID
+}
